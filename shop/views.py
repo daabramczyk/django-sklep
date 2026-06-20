@@ -5,9 +5,8 @@ from django.db import transaction
 from django.db.models import Q, Sum, F, DecimalField, ExpressionWrapper
 
 from .app_messages import add_app_message
-from .forms import RegisterForm, ProfileEditForm
-from .models import Brand, Category, Product, ProductVariant, Order, OrderItem
-
+from .forms import RegisterForm, UserForm, UserProfileForm
+from .models import Brand, Category, Product, ProductVariant, Order, OrderItem, UserProfile
 
 def add_to_cart(request):
     variant_id = request.POST.get("variant_id")
@@ -167,10 +166,30 @@ def checkout(request):
         add_app_message(request, "KB_03")
         return redirect("cart")
 
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+
+    if not profile.phone or not profile.street or not profile.postal_code or not profile.city:
+        add_app_message(
+            request,
+            "KB_07",
+            "Uzupełnij telefon i adres dostawy przed złożeniem zamówienia."
+        )
+        return redirect("edit_profile")
+
     if request.method == "POST":
         try:
             with transaction.atomic():
-                order = Order.objects.create(user=request.user)
+                order = Order.objects.create(
+                    user=request.user,
+                    first_name=request.user.first_name,
+                    last_name=request.user.last_name,
+                    phone=profile.phone,
+                    street=profile.street,
+                    postal_code=profile.postal_code,
+                    city=profile.city,
+                )
 
                 for variant_id, quantity in cart.items():
                     variant = ProductVariant.objects.select_for_update().get(pk=variant_id)
@@ -265,7 +284,13 @@ def register_view(request):
 
 
 @login_required
+
+@login_required
 def profile_view(request):
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+
     orders = Order.objects.filter(user=request.user)
 
     orders_count = orders.count()
@@ -287,27 +312,50 @@ def profile_view(request):
         request,
         "shop/profile.html",
         {
+            "profile": profile,
             "orders_count": orders_count,
             "total_spent": total_spent,
             "last_order": last_order,
         }
     )
 
+@login_required
 
 @login_required
 def edit_profile(request):
-    if request.method == "POST":
-        form = ProfileEditForm(request.POST, instance=request.user)
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user
+    )
 
-        if form.is_valid():
-            form.save()
+    if request.method == "POST":
+        user_form = UserForm(
+            request.POST,
+            instance=request.user
+        )
+
+        profile_form = UserProfileForm(
+            request.POST,
+            instance=profile
+        )
+
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+
             add_app_message(request, "KS_03")
             return redirect("profile")
     else:
-        form = ProfileEditForm(instance=request.user)
+        user_form = UserForm(instance=request.user)
+        profile_form = UserProfileForm(instance=profile)
 
-    return render(request, "shop/edit_profile.html", {"form": form})
-
+    return render(
+        request,
+        "shop/edit_profile.html",
+        {
+            "user_form": user_form,
+            "profile_form": profile_form,
+        }
+    )
 
 def logout_view(request):
     logout(request)
@@ -344,10 +392,38 @@ def ship_order(request, order_id):
         return redirect("order_detail", order_id=order.id)
 
     if request.method == "POST":
+        tracking_number = request.POST.get("tracking_number", "").strip()
+
+        if not tracking_number:
+            add_app_message(request, "KB_08", "Podaj numer przesyłki.")
+            return redirect("order_detail", order_id=order.id)
+
+        order.tracking_number = tracking_number
         order.status = "SHIPPED"
         order.save()
 
         add_app_message(request, "KS_07", f"Zamówienie {order.order_number} zostało wysłane.")
+        return redirect("order_detail", order_id=order.id)
+
+    return redirect("order_detail", order_id=order.id)
+
+@login_required
+def deliver_order(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+
+    if not request.user.is_staff:
+        add_app_message(request, "KB_06", "Nie masz uprawnień do zmiany statusu zamówienia.")
+        return redirect("order_detail", order_id=order.id)
+
+    if order.status != "SHIPPED":
+        add_app_message(request, "KO_03", "Dostarczyć można tylko wysłane zamówienie.")
+        return redirect("order_detail", order_id=order.id)
+
+    if request.method == "POST":
+        order.status = "DELIVERED"
+        order.save()
+
+        add_app_message(request, "KS_08", f"Zamówienie {order.order_number} zostało dostarczone.")
         return redirect("order_detail", order_id=order.id)
 
     return redirect("order_detail", order_id=order.id)

@@ -5,10 +5,21 @@
 <div class="form-box">
     <h1>Mój profil</h1>
 
+    <h2>Dane konta</h2>
+
     <p><strong>Login:</strong> {{ request.user.username }}</p>
     <p><strong>Imię:</strong> {{ request.user.first_name|default:"-" }}</p>
     <p><strong>Nazwisko:</strong> {{ request.user.last_name|default:"-" }}</p>
     <p><strong>Email:</strong> {{ request.user.email }}</p>
+
+    <hr>
+
+    <h2>Adres dostawy</h2>
+
+    <p><strong>Telefon:</strong> {{ profile.phone|default:"-" }}</p>
+    <p><strong>Ulica:</strong> {{ profile.street|default:"-" }}</p>
+    <p><strong>Kod pocztowy:</strong> {{ profile.postal_code|default:"-" }}</p>
+    <p><strong>Miasto:</strong> {{ profile.city|default:"-" }}</p>
 
     <hr>
 
@@ -30,7 +41,7 @@
 
     <hr>
 
-    <a class="btn" href="/profile/edit/">Edytuj profil</a>
+    <a class="btn" href="/profile/edit/">Edytuj profil i adres</a>
     <a class="btn" href="/orders/">Moje zamówienia</a>
     <a class="btn btn-secondary" href="/logout/">Wyloguj</a>
 </div>

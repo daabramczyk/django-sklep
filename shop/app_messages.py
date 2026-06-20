@@ -15,10 +15,12 @@ APP_MESSAGES = {
     "KB_04": ("error", "Jeden z produktów w koszyku nie istnieje."),
     "KB_05": ("error", "Nie można złożyć zamówienia. Brak wystarczającej liczby sztuk."),
     "KS_06": ("success", "Zamówienie zostało opłacone."),
-
+    "KB_07": ("error", "Brak wymaganych danych dostawy."),
     "KI_01": ("info", "Wyniki zostały przefiltrowane."),
     "KI_02": ("info", "Koszyk został zaktualizowany."),
-
+    "KS_08": ("success", "Zamówienie zostało dostarczone."),
+    "KB_08": ("error", "Brak numeru przesyłki."),
+    "KO_03": ("warning", "Nie można dostarczyć zamówienia w aktualnym statusie."),
     "KO_01": ("warning", "Wybrana ilość została ograniczona."),
     "KO_02": ("warning", "Produkt ma niski stan magazynowy."),
 }

@@ -3,11 +3,16 @@
 {% block content %}
 
 <div class="form-box">
-    <h1>Edytuj profil</h1>
+    <h1>Edytuj profil i adres dostawy</h1>
 
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+
+        <h2>Dane użytkownika</h2>
+        {{ user_form.as_p }}
+
+        <h2>Adres dostawy</h2>
+        {{ profile_form.as_p }}
 
         <button class="btn" type="submit">
             Zapisz zmiany

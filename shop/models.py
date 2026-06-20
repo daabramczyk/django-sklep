@@ -65,11 +65,19 @@ class Order(models.Model):
         ("PAID", "Opłacone"),
         ("SHIPPED", "Wysłane"),
         ("DELIVERED", "Dostarczone"),
-        ("CANCELLED", "Anulowane"),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    order_number = models.CharField(
+        max_length=32,
+        unique=True,
+        blank=True,
+        null=True
+    )
 
     status = models.CharField(
         max_length=20,
@@ -77,11 +85,19 @@ class Order(models.Model):
         default="NEW"
     )
 
-    order_number = models.CharField(
-        max_length=30,
-        unique=True,
-        blank=True,
-        null=True
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+
+    street = models.CharField(max_length=255, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+
+    tracking_number = models.CharField(
+        max_length=100,
+        blank=True
     )
 
     def save(self, *args, **kwargs):
@@ -115,6 +131,25 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.variant} x {self.quantity}"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+
+    phone = models.CharField(max_length=30, blank=True)
+
+    street = models.CharField(max_length=255, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return self.user.username
 
 
 class OrderStatusHistory(models.Model):
