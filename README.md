@@ -1,1 +1,1 @@
-# django-samochody
+# django-sklep
