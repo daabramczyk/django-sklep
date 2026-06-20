@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Q, Sum, F, DecimalField, ExpressionWrapper
+from django.db.models import Q, Sum, F, DecimalField, ExpressionWrapper, Count
 from django.shortcuts import render, get_object_or_404, redirect
 
 from .app_messages import add_app_message
@@ -18,7 +18,21 @@ from .models import (
     OrderItem,
     UserProfile,
     Review,
+    AuditLog,
 )
+
+
+def user_has_backoffice_access(user):
+    if not user.is_authenticated:
+        return False
+
+    if user.is_staff:
+        return True
+
+    try:
+        return user.userprofile.role in ["MANAGER", "ADMIN"]
+    except UserProfile.DoesNotExist:
+        return False
 
 
 def calculate_cart(request):
@@ -407,6 +421,14 @@ def pay_order(request, order_id):
         order.status = "PAID"
         order.save()
 
+        AuditLog.objects.create(
+            actor=request.user,
+            action="ORDER_PAID",
+            object_type="Order",
+            object_id=str(order.id),
+            description=f"Zamówienie {order.order_number} zostało opłacone.",
+        )
+
         add_app_message(request, "KS_06", f"Zamówienie {order.order_number} zostało opłacone.")
         return redirect("order_detail", order_id=order.id)
 
@@ -436,6 +458,14 @@ def ship_order(request, order_id):
         order.status = "SHIPPED"
         order.save()
 
+        AuditLog.objects.create(
+            actor=request.user,
+            action="ORDER_SHIPPED",
+            object_type="Order",
+            object_id=str(order.id),
+            description=f"Zamówienie {order.order_number} wysłane. Numer przesyłki: {tracking_number}",
+        )
+
         add_app_message(request, "KS_07", f"Zamówienie {order.order_number} zostało wysłane.")
         return redirect("order_detail", order_id=order.id)
 
@@ -458,10 +488,59 @@ def deliver_order(request, order_id):
         order.status = "DELIVERED"
         order.save()
 
+        AuditLog.objects.create(
+            actor=request.user,
+            action="ORDER_DELIVERED",
+            object_type="Order",
+            object_id=str(order.id),
+            description=f"Zamówienie {order.order_number} zostało dostarczone.",
+        )
+
         add_app_message(request, "KS_08", f"Zamówienie {order.order_number} zostało dostarczone.")
         return redirect("order_detail", order_id=order.id)
 
     return redirect("order_detail", order_id=order.id)
+
+
+@login_required
+def dashboard(request):
+    if not user_has_backoffice_access(request.user):
+        add_app_message(request, "KB_06", "Nie masz dostępu do dashboardu.")
+        return redirect("product_list")
+
+    orders_count = Order.objects.count()
+    products_count = Product.objects.count()
+    customers_count = UserProfile.objects.filter(role="CUSTOMER").count()
+
+    revenue = Order.objects.filter(
+        status__in=["PAID", "SHIPPED", "DELIVERED"]
+    ).aggregate(
+        total=Sum("total_after_discount")
+    )["total"] or Decimal("0.00")
+
+    top_products = Product.objects.annotate(
+        sold=Sum("variants__orderitem__quantity")
+    ).order_by("-sold")[:5]
+
+    top_brands = Brand.objects.annotate(
+        sold=Sum("product__variants__orderitem__quantity")
+    ).order_by("-sold")[:5]
+
+    recent_audits = AuditLog.objects.order_by("-created_at")[:10]
+
+    return render(
+        request,
+        "shop/dashboard.html",
+        {
+            "orders_count": orders_count,
+            "products_count": products_count,
+            "customers_count": customers_count,
+            "revenue": revenue,
+            "top_products": top_products,
+            "top_brands": top_brands,
+            "recent_audits": recent_audits,
+        }
+    )
 
 
 def register_view(request):
@@ -473,6 +552,7 @@ def register_view(request):
 
         if form.is_valid():
             user = form.save()
+            UserProfile.objects.create(user=user)
             login(request, user)
             add_app_message(request, "KS_04")
             return redirect("profile")

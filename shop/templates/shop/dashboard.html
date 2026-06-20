@@ -1,0 +1,79 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<h1>Dashboard sklepu</h1>
+
+<div class="products-grid">
+
+    <div class="card">
+        <h2>Zamówienia</h2>
+        <p class="price">{{ orders_count }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Przychód</h2>
+        <p class="price">{{ revenue }} zł</p>
+    </div>
+
+    <div class="card">
+        <h2>Produkty</h2>
+        <p class="price">{{ products_count }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Klienci</h2>
+        <p class="price">{{ customers_count }}</p>
+    </div>
+
+</div>
+
+<br>
+
+<div class="form-box">
+    <h2>Top 5 produktów</h2>
+
+    <ul>
+        {% for product in top_products %}
+            <li>
+                {{ product.brand.name }} {{ product.name }}
+                |
+                sprzedano: {{ product.sold|default:0 }}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="form-box">
+    <h2>Top 5 marek</h2>
+
+    <ul>
+        {% for brand in top_brands %}
+            <li>
+                {{ brand.name }}
+                |
+                sprzedano: {{ brand.sold|default:0 }}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="form-box">
+    <h2>Ostatnie akcje AuditLog</h2>
+
+    <ul>
+        {% for audit in recent_audits %}
+            <li>
+                {{ audit.created_at }}
+                |
+                {{ audit.actor|default:"SYSTEM" }}
+                |
+                {{ audit.action }}
+                |
+                {{ audit.description }}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}

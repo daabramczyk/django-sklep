@@ -139,7 +139,18 @@ class Order(models.Model):
             super().save(update_fields=["order_number"])
 
         if old_status != self.status:
-            OrderStatusHistory.objects.create(order=self, status=self.status)
+            OrderStatusHistory.objects.create(
+                order=self,
+                status=self.status
+            )
+
+            AuditLog.objects.create(
+                actor=None,
+                action="ORDER_STATUS_CHANGED",
+                object_type="Order",
+                object_id=str(self.id),
+                description=f"Status zamówienia {self.order_number}: {old_status} -> {self.status}",
+            )
 
     def __str__(self):
         return self.order_number or f"Zamówienie #{self.id}"
@@ -175,7 +186,20 @@ class Review(models.Model):
 
 
 class UserProfile(models.Model):
+    ROLE_CHOICES = [
+        ("CUSTOMER", "Klient"),
+        ("WAREHOUSE", "Magazynier"),
+        ("MANAGER", "Manager"),
+        ("ADMIN", "Administrator"),
+    ]
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default="CUSTOMER"
+    )
 
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
@@ -186,7 +210,7 @@ class UserProfile(models.Model):
     city = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
-        return self.user.username
+        return f"{self.user.username} - {self.get_role_display()}"
 
 
 class OrderStatusHistory(models.Model):
@@ -196,3 +220,22 @@ class OrderStatusHistory(models.Model):
 
     def __str__(self):
         return f"{self.order} - {self.get_status_display()} - {self.created_at}"
+
+
+class AuditLog(models.Model):
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    action = models.CharField(max_length=100)
+    object_type = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        actor_name = self.actor.username if self.actor else "SYSTEM"
+        return f"{self.created_at} | {actor_name} | {self.action}"
