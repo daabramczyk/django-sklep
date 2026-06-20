@@ -4,6 +4,15 @@ Kompletny system sklepu internetowego zbudowany w technologii Django, PostgreSQL
 
 Projekt został przygotowany jako przykład pełnego rozwiązania biznesowo-systemowego obejmującego analizę biznesową, model danych, architekturę systemu, implementację backendu, REST API, uwierzytelnianie JWT, testy automatyczne oraz dokumentację projektową.
 
+Logowanie:
+Konto administratora:
+login: admin 
+hasło: admin12345
+
+Kontro testowe:
+login: testowyk
+hasło: Test123456
+
 ---
 
 # Business Overview
