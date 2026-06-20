@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import api_views
 from . import views
@@ -7,7 +8,6 @@ from . import views
 
 urlpatterns = [
     path("", views.home, name="home"),
-
     path("dashboard/", views.dashboard, name="dashboard"),
 
     path("products/", views.product_list, name="product_list"),
@@ -33,6 +33,9 @@ urlpatterns = [
 
     path("profile/", views.profile_view, name="profile"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
+
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
     path("api/brands/", api_views.BrandListApiView.as_view(), name="api_brands"),
     path("api/categories/", api_views.CategoryListApiView.as_view(), name="api_categories"),

@@ -153,8 +153,10 @@ LOGOUT_REDIRECT_URL = "/products/"
 LOGIN_URL = "/login/"
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
 }
-
 SPECTACULAR_SETTINGS = {
     "TITLE": "Clothing Store API",
     "DESCRIPTION": "API sklepu odzieżowego Django.",
