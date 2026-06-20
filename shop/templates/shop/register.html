@@ -1,0 +1,24 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<div class="form-box">
+    <h1>Rejestracja</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button class="btn" type="submit">
+            Zarejestruj
+        </button>
+    </form>
+
+    <p>
+        Masz już konto?
+        <a href="/login/">Zaloguj się</a>
+    </p>
+</div>
+
+{% endblock %}
+

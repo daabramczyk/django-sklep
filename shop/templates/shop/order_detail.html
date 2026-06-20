@@ -1,0 +1,82 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<h1>Szczegóły zamówienia</h1>
+
+<div class="cart-item">
+    <h2>{{ order.order_number }}</h2>
+
+    <p><strong>Data:</strong> {{ order.created_at }}</p>
+    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+
+    {% if order.status == "NEW" %}
+        <form method="post" action="{% url 'pay_order' order.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">
+                Zapłać teraz
+            </button>
+        </form>
+    {% endif %}
+
+    {% if request.user.is_staff %}
+        <hr>
+        <h3>Panel pracownika sklepu</h3>
+
+        {% if order.status == "PAID" %}
+            <form method="post" action="{% url 'ship_order' order.id %}">
+                {% csrf_token %}
+                <button class="btn" type="submit">
+                    Oznacz jako wysłane
+                </button>
+            </form>
+        {% else %}
+            <p>
+                Akcja wysyłki dostępna tylko dla zamówień opłaconych.
+            </p>
+        {% endif %}
+    {% endif %}
+
+    <h3>Produkty</h3>
+
+    <ul>
+        {% for item in order.items.all %}
+            <li>
+                <strong>{{ item.variant.product.brand.name }}</strong>
+                {{ item.variant.product.name }}
+                |
+                {{ item.variant.color }}
+                |
+                {{ item.variant.size }}
+                |
+                Ilość: {{ item.quantity }}
+                |
+                Cena: {{ item.price_at_order }} zł
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h3>Suma: {{ total }} zł</h3>
+</div>
+
+<div class="cart-item">
+    <h2>Historia statusów</h2>
+
+    {% if order.status_history.all %}
+        <ul>
+            {% for history in order.status_history.all %}
+                <li>
+                    {{ history.created_at }}
+                    |
+                    {{ history.get_status_display }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Brak historii statusów.</p>
+    {% endif %}
+</div>
+
+<a href="/orders/">← Powrót do zamówień</a>
+
+{% endblock %}

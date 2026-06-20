@@ -1,0 +1,22 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<div class="form-box">
+    <h1>Edytuj profil</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button class="btn" type="submit">
+            Zapisz zmiany
+        </button>
+
+        <a class="btn btn-secondary" href="/profile/">
+            Anuluj
+        </a>
+    </form>
+</div>
+
+{% endblock %}

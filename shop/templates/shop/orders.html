@@ -1,0 +1,31 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<h1>Moje zamówienia</h1>
+
+{% if orders %}
+    {% for order in orders %}
+        <div class="cart-item">
+            <h2>
+                <a href="/orders/{{ order.id }}/">
+                    {{ order.order_number }}
+                </a>
+            </h2>
+
+            <p><strong>Data:</strong> {{ order.created_at }}</p>
+            <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+
+            <a class="btn" href="/orders/{{ order.id }}/">
+                Szczegóły zamówienia
+            </a>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Nie masz jeszcze zamówień.</p>
+{% endif %}
+
+<a href="/products/">← Powrót do produktów</a>
+
+{% endblock %}
+

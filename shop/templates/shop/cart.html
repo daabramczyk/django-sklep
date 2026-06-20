@@ -49,9 +49,18 @@
 
     <h2>Suma: {{ total }} zł</h2>
 
+    <form method="post" action="{% url 'checkout' %}">
+        {% csrf_token %}
+        <button class="btn" type="submit">
+            Złóż zamówienie
+        </button>
+    </form>
+
 {% else %}
     <p>Koszyk jest pusty.</p>
 {% endif %}
+
+<br>
 
 <a href="/products/">← Powrót do produktów</a>
 

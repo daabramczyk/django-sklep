@@ -60,6 +60,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+			'shop.context_processors.cart_count',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -140,3 +141,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+LOGIN_REDIRECT_URL = "/profile/"
+LOGOUT_REDIRECT_URL = "/products/"
+LOGIN_URL = "/login/"

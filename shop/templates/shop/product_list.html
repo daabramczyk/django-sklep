@@ -4,6 +4,61 @@
 
 <h1>Produkty</h1>
 
+<div class="form-box">
+    <form method="get">
+        <label>Szukaj:</label><br>
+        <input
+            type="text"
+            name="q"
+            value="{{ selected_query }}"
+            placeholder="Nazwa, marka, kategoria"
+        >
+
+        <br><br>
+
+        <label>Marka:</label><br>
+        <select name="brand">
+            <option value="">Wszystkie marki</option>
+            {% for brand in brands %}
+                <option value="{{ brand.id }}" {% if brand.id|stringformat:"s" == selected_brand %}selected{% endif %}>
+                    {{ brand.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+
+        <label>Kategoria:</label><br>
+        <select name="category">
+            <option value="">Wszystkie kategorie</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if category.id|stringformat:"s" == selected_category %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+
+        <label>Rozmiar:</label><br>
+        <select name="size">
+            <option value="">Wszystkie rozmiary</option>
+            {% for value, label in sizes %}
+                <option value="{{ value }}" {% if value == selected_size %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+
+        <button class="btn" type="submit">Filtruj</button>
+        <a class="btn btn-secondary" href="/products/">Wyczyść</a>
+    </form>
+</div>
+
+<br>
+
 {% if products %}
     <div class="products-grid">
         {% for product in products %}
