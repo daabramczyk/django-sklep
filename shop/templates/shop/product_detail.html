@@ -18,6 +18,12 @@
 <p><strong>Płeć:</strong> {{ product.gender }}</p>
 <p><strong>Materiał:</strong> {{ product.material }}</p>
 
+{% if product.average_rating %}
+    <p><strong>Średnia ocena:</strong> {{ product.average_rating }}/5 z {{ product.reviews_count }} opinii</p>
+{% else %}
+    <p><strong>Średnia ocena:</strong> brak ocen</p>
+{% endif %}
+
 <p>
     <strong>Opis:</strong><br>
     {{ product.description }}
@@ -33,9 +39,17 @@
     <label for="variant_id">Wariant:</label><br>
     <select name="variant_id" id="variant_id">
         {% for variant in product.variants.all %}
-            <option value="{{ variant.id }}">
-                {{ variant.color }} | {{ variant.size }} | {{ variant.price }} zł | stan: {{ variant.stock }}
-            </option>
+            {% if variant.stock > 0 %}
+                <option value="{{ variant.id }}">
+                    {{ variant.color }} | {{ variant.size }} |
+                    {% if variant.is_on_sale %}
+                        PROMOCJA: {{ variant.sale_price }} zł zamiast {{ variant.price }} zł
+                    {% else %}
+                        {{ variant.price }} zł
+                    {% endif %}
+                    | stan: {{ variant.stock }}
+                </option>
+            {% endif %}
         {% endfor %}
     </select>
 
@@ -67,6 +81,35 @@
 <br><br>
 <a href="/products/">← Powrót do produktów</a>
 
+</div>
+
+<div class="form-box">
+    <h2>Opinie</h2>
+
+    {% if product.reviews.all %}
+        {% for review in product.reviews.all %}
+            <div class="cart-item">
+                <p><strong>{{ review.user.username }}</strong> — {{ review.rating }}/5</p>
+                <p>{{ review.comment }}</p>
+                <small>{{ review.created_at }}</small>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Brak opinii.</p>
+    {% endif %}
+
+    {% if request.user.is_authenticated %}
+        <h3>Dodaj opinię</h3>
+
+        <form method="post" action="{% url 'add_review' product.id %}">
+            {% csrf_token %}
+            {{ review_form.as_p }}
+
+            <button class="btn" type="submit">Dodaj opinię</button>
+        </form>
+    {% else %}
+        <p><a href="/login/">Zaloguj się</a>, aby dodać opinię.</p>
+    {% endif %}
 </div>
 
 <script>

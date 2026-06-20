@@ -19,7 +19,16 @@
                 Rozmiar: {{ item.variant.size }}
             </p>
 
-            <p>Cena: {{ item.variant.price }} zł</p>
+            {% if item.variant.is_on_sale %}
+                <p>
+                    Cena:
+                    <s>{{ item.variant.price }} zł</s>
+                    <strong>{{ item.price }} zł</strong>
+                </p>
+            {% else %}
+                <p>Cena: {{ item.price }} zł</p>
+            {% endif %}
+
             <p>Ilość w koszyku: {{ item.quantity }}</p>
             <p><strong>Razem: {{ item.item_total }} zł</strong></p>
 
@@ -47,14 +56,37 @@
         </div>
     {% endfor %}
 
-    <h2>Suma: {{ total }} zł</h2>
+    <div class="form-box">
+        <h2>Podsumowanie</h2>
 
-    <form method="post" action="{% url 'checkout' %}">
-        {% csrf_token %}
-        <button class="btn" type="submit">
-            Złóż zamówienie
-        </button>
-    </form>
+        <p>Wartość produktów: {{ subtotal }} zł</p>
+
+        {% if coupon %}
+            <p>Kupon: {{ coupon.code }} (-{{ coupon.discount_percent }}%)</p>
+            <p>Rabat: {{ discount_amount }} zł</p>
+
+            <form method="post" action="{% url 'remove_coupon' %}">
+                {% csrf_token %}
+                <button class="btn btn-secondary" type="submit">Usuń kupon</button>
+            </form>
+        {% else %}
+            <form method="post" action="{% url 'apply_coupon' %}">
+                {% csrf_token %}
+                <label>Kod kuponu:</label><br>
+                <input type="text" name="coupon_code" placeholder="np. SALE10">
+                <button class="btn" type="submit">Zastosuj</button>
+            </form>
+        {% endif %}
+
+        <h2>Suma do zapłaty: {{ total }} zł</h2>
+
+        <form method="post" action="{% url 'checkout' %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">
+                Złóż zamówienie
+            </button>
+        </form>
+    </div>
 
 {% else %}
     <p>Koszyk jest pusty.</p>

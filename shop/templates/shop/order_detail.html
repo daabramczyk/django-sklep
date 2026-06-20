@@ -8,47 +8,43 @@
 
     <h2>{{ order.order_number }}</h2>
 
-    <p>
-        <strong>Data:</strong>
-        {{ order.created_at }}
-    </p>
-
-    <p>
-        <strong>Status:</strong>
-        {{ order.get_status_display }}
-    </p>
+    <p><strong>Data:</strong> {{ order.created_at }}</p>
+    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
 
     {% if order.tracking_number %}
-        <p>
-            <strong>Numer przesyłki:</strong>
-            {{ order.tracking_number }}
-        </p>
+        <p><strong>Numer przesyłki:</strong> {{ order.tracking_number }}</p>
     {% endif %}
 
     {% if order.status == "NEW" %}
         <form method="post" action="{% url 'pay_order' order.id %}">
             {% csrf_token %}
 
+            <label>Kod BLIK</label><br>
+            <input
+                type="text"
+                name="blik_code"
+                maxlength="6"
+                placeholder="123456"
+                required
+            >
+
+            <br><br>
+
             <button class="btn" type="submit">
-                Zapłać teraz
+                Zapłać BLIK
             </button>
         </form>
     {% endif %}
 
     {% if request.user.is_staff %}
-
         <hr>
-
         <h3>Panel pracownika sklepu</h3>
 
         {% if order.status == "PAID" %}
-
             <form method="post" action="{% url 'ship_order' order.id %}">
                 {% csrf_token %}
 
-                <label>Numer przesyłki</label>
-
-                <br><br>
+                <label>Numer przesyłki</label><br><br>
 
                 <input
                     type="text"
@@ -62,125 +58,77 @@
                 <button class="btn" type="submit">
                     Oznacz jako wysłane
                 </button>
-
             </form>
-
         {% elif order.status == "SHIPPED" %}
-
             <form method="post" action="{% url 'deliver_order' order.id %}">
                 {% csrf_token %}
-
                 <button class="btn" type="submit">
                     Oznacz jako dostarczone
                 </button>
-
             </form>
-
         {% endif %}
-
     {% endif %}
 
     <hr>
 
     <h3>Dane dostawy</h3>
 
-    <p>
-        <strong>Imię i nazwisko:</strong>
-        {{ order.first_name }}
-        {{ order.last_name }}
-    </p>
-
-    <p>
-        <strong>Telefon:</strong>
-        {{ order.phone }}
-    </p>
-
-    <p>
-        <strong>Adres:</strong>
-        {{ order.street }},
-        {{ order.postal_code }}
-        {{ order.city }}
-    </p>
+    <p><strong>Imię i nazwisko:</strong> {{ order.first_name }} {{ order.last_name }}</p>
+    <p><strong>Telefon:</strong> {{ order.phone }}</p>
+    <p><strong>Adres:</strong> {{ order.street }}, {{ order.postal_code }} {{ order.city }}</p>
 
     <hr>
 
     <h3>Produkty</h3>
 
     <ul>
-
         {% for item in order.items.all %}
-
             <li>
-
-                <strong>
-                    {{ item.variant.product.brand.name }}
-                </strong>
-
+                <strong>{{ item.variant.product.brand.name }}</strong>
                 {{ item.variant.product.name }}
-
                 |
-
                 {{ item.variant.color }}
-
                 |
-
                 {{ item.variant.size }}
-
                 |
-
-                Ilość:
-                {{ item.quantity }}
-
+                Ilość: {{ item.quantity }}
                 |
-
-                Cena:
-                {{ item.price_at_order }} zł
-
+                Cena: {{ item.price_at_order }} zł
             </li>
-
         {% endfor %}
-
     </ul>
 
-    <h3>
-        Suma:
-        {{ total }} zł
-    </h3>
+    <p>Przed rabatem: {{ order.total_before_discount }} zł</p>
+
+    {% if order.coupon_code %}
+        <p>Kupon: {{ order.coupon_code }}</p>
+        <p>Rabat: {{ order.discount_amount }} zł</p>
+    {% endif %}
+
+    <h3>Suma: {{ order.total_after_discount }} zł</h3>
 
 </div>
 
 <div class="cart-item">
-
     <h2>Historia statusów</h2>
 
     {% if order.status_history.all %}
-
         <ul>
-
             {% for history in order.status_history.all %}
-
                 <li>
                     {{ history.created_at }}
                     |
                     {{ history.get_status_display }}
                 </li>
-
             {% endfor %}
-
         </ul>
-
     {% else %}
-
         <p>Brak historii statusów.</p>
-
     {% endif %}
-
 </div>
 
 <br>
 
-<a class="btn" href="/orders/">
-    ← Powrót do zamówień
-</a>
+<a class="btn" href="/orders/">← Powrót do zamówień</a>
 
 {% endblock %}

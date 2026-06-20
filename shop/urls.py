@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 
+from . import api_views
 from . import views
 
 
@@ -30,4 +31,10 @@ urlpatterns = [
 
     path("profile/", views.profile_view, name="profile"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
+
+    path("api/brands/", api_views.BrandListApiView.as_view(), name="api_brands"),
+    path("api/categories/", api_views.CategoryListApiView.as_view(), name="api_categories"),
+    path("api/products/", api_views.ProductListApiView.as_view(), name="api_products"),
+    path("api/products/<int:pk>/", api_views.ProductDetailApiView.as_view(), name="api_product_detail"),
+    path("api/orders/", api_views.OrderListApiView.as_view(), name="api_orders"),
 ]
