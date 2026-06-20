@@ -7,22 +7,31 @@ APP_MESSAGES = {
     "KS_03": ("success", "Profil został zaktualizowany."),
     "KS_04": ("success", "Konto zostało utworzone."),
     "KS_05": ("success", "Wylogowano."),
+    "KS_06": ("success", "Zamówienie zostało opłacone."),
     "KS_07": ("success", "Zamówienie zostało wysłane."),
-    "KB_06": ("error", "Brak uprawnień."),
+    "KS_08": ("success", "Zamówienie zostało dostarczone."),
+    "KS_09": ("success", "Kupon został zastosowany."),
+    "KS_10": ("success", "Kupon został usunięty."),
+    "KS_11": ("success", "Opinia została dodana."),
+
     "KB_01": ("error", "Ilość musi być większa od zera."),
     "KB_02": ("error", "Nie można dodać produktu. Przekroczono dostępny stan magazynowy."),
     "KB_03": ("error", "Koszyk jest pusty."),
     "KB_04": ("error", "Jeden z produktów w koszyku nie istnieje."),
     "KB_05": ("error", "Nie można złożyć zamówienia. Brak wystarczającej liczby sztuk."),
-    "KS_06": ("success", "Zamówienie zostało opłacone."),
+    "KB_06": ("error", "Brak uprawnień."),
     "KB_07": ("error", "Brak wymaganych danych dostawy."),
+    "KB_08": ("error", "Brak numeru przesyłki."),
+    "KB_09": ("error", "Nieprawidłowy kod BLIK."),
+    "KB_10": ("error", "Kupon nie istnieje albo jest nieaktywny."),
+    "KB_11": ("error", "Nie można dodać drugiej opinii do tego produktu."),
+
     "KI_01": ("info", "Wyniki zostały przefiltrowane."),
     "KI_02": ("info", "Koszyk został zaktualizowany."),
-    "KS_08": ("success", "Zamówienie zostało dostarczone."),
-    "KB_08": ("error", "Brak numeru przesyłki."),
+
+    "KO_01": ("warning", "Opłacić można tylko nowe zamówienie."),
+    "KO_02": ("warning", "Wysłać można tylko opłacone zamówienie."),
     "KO_03": ("warning", "Nie można dostarczyć zamówienia w aktualnym statusie."),
-    "KO_01": ("warning", "Wybrana ilość została ograniczona."),
-    "KO_02": ("warning", "Produkt ma niski stan magazynowy."),
 }
 
 

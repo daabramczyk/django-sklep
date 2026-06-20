@@ -1,12 +1,68 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from decimal import Decimal
+
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q, Sum, F, DecimalField, ExpressionWrapper
+from django.shortcuts import render, get_object_or_404, redirect
 
 from .app_messages import add_app_message
-from .forms import RegisterForm, UserForm, UserProfileForm
-from .models import Brand, Category, Product, ProductVariant, Order, OrderItem, UserProfile
+from .forms import RegisterForm, UserForm, UserProfileForm, ReviewForm
+from .models import (
+    Brand,
+    Category,
+    Product,
+    ProductVariant,
+    Coupon,
+    Order,
+    OrderItem,
+    UserProfile,
+    Review,
+)
+
+
+def calculate_cart(request):
+    cart = request.session.get("cart", {})
+
+    cart_items = []
+    subtotal = Decimal("0.00")
+
+    for variant_id, quantity in cart.items():
+        variant = get_object_or_404(ProductVariant, pk=variant_id)
+        price = variant.get_price()
+        item_total = price * quantity
+
+        cart_items.append({
+            "variant": variant,
+            "quantity": quantity,
+            "price": price,
+            "item_total": item_total,
+        })
+
+        subtotal += item_total
+
+    coupon = None
+    discount_amount = Decimal("0.00")
+    total = subtotal
+
+    coupon_code = request.session.get("coupon_code")
+
+    if coupon_code:
+        try:
+            coupon = Coupon.objects.get(code=coupon_code, is_active=True)
+            discount_amount = subtotal * Decimal(coupon.discount_percent) / Decimal("100")
+            total = subtotal - discount_amount
+        except Coupon.DoesNotExist:
+            request.session.pop("coupon_code", None)
+
+    return {
+        "cart_items": cart_items,
+        "subtotal": subtotal,
+        "coupon": coupon,
+        "discount_amount": discount_amount,
+        "total": total,
+    }
+
 
 def add_to_cart(request):
     variant_id = request.POST.get("variant_id")
@@ -42,6 +98,29 @@ def add_to_cart(request):
     return True
 
 
+def home(request):
+    featured_products = Product.objects.filter(is_featured=True).select_related(
+        "brand",
+        "category",
+    ).prefetch_related("variants")[:4]
+
+    top_products = Product.objects.select_related(
+        "brand",
+        "category",
+    ).prefetch_related("variants").annotate(
+        sold=Sum("variants__orderitem__quantity")
+    ).order_by("-sold")[:4]
+
+    return render(
+        request,
+        "shop/home.html",
+        {
+            "featured_products": featured_products,
+            "top_products": top_products,
+        }
+    )
+
+
 def product_list(request):
     if request.method == "POST":
         success = add_to_cart(request)
@@ -54,7 +133,7 @@ def product_list(request):
     products = Product.objects.select_related(
         "brand",
         "category",
-    ).prefetch_related("variants")
+    ).prefetch_related("variants", "reviews")
 
     query = request.GET.get("q", "")
     brand_id = request.GET.get("brand", "")
@@ -99,7 +178,10 @@ def product_list(request):
 
 
 def product_detail(request, product_id):
-    product = get_object_or_404(Product, pk=product_id)
+    product = get_object_or_404(
+        Product.objects.select_related("brand", "category").prefetch_related("variants", "reviews"),
+        pk=product_id,
+    )
 
     if request.method == "POST":
         success = add_to_cart(request)
@@ -109,28 +191,69 @@ def product_detail(request, product_id):
 
         return redirect("product_detail", product_id=product.id)
 
-    return render(request, "shop/product_detail.html", {"product": product})
+    review_form = ReviewForm()
+
+    return render(
+        request,
+        "shop/product_detail.html",
+        {
+            "product": product,
+            "review_form": review_form,
+        }
+    )
+
+
+@login_required
+def add_review(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+
+    if request.method == "POST":
+        if Review.objects.filter(product=product, user=request.user).exists():
+            add_app_message(request, "KB_11")
+            return redirect("product_detail", product_id=product.id)
+
+        form = ReviewForm(request.POST)
+
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.user = request.user
+            review.save()
+
+            add_app_message(request, "KS_11")
+            return redirect("product_detail", product_id=product.id)
+
+    return redirect("product_detail", product_id=product.id)
 
 
 def cart_view(request):
-    cart = request.session.get("cart", {})
+    cart_data = calculate_cart(request)
 
-    cart_items = []
-    total = 0
+    return render(
+        request,
+        "shop/cart.html",
+        cart_data,
+    )
 
-    for variant_id, quantity in cart.items():
-        variant = get_object_or_404(ProductVariant, pk=variant_id)
-        item_total = variant.price * quantity
 
-        cart_items.append({
-            "variant": variant,
-            "quantity": quantity,
-            "item_total": item_total,
-        })
+def apply_coupon(request):
+    if request.method == "POST":
+        code = request.POST.get("coupon_code", "").strip().upper()
 
-        total += item_total
+        try:
+            coupon = Coupon.objects.get(code=code, is_active=True)
+            request.session["coupon_code"] = coupon.code
+            add_app_message(request, "KS_09", f"Kod: {coupon.code}.")
+        except Coupon.DoesNotExist:
+            add_app_message(request, "KB_10")
 
-    return render(request, "shop/cart.html", {"cart_items": cart_items, "total": total})
+    return redirect("cart")
+
+
+def remove_coupon(request):
+    request.session.pop("coupon_code", None)
+    add_app_message(request, "KS_10")
+    return redirect("cart")
 
 
 def remove_from_cart(request, variant_id):
@@ -166,9 +289,7 @@ def checkout(request):
         add_app_message(request, "KB_03")
         return redirect("cart")
 
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user
-    )
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if not profile.phone or not profile.street or not profile.postal_code or not profile.city:
         add_app_message(
@@ -181,6 +302,8 @@ def checkout(request):
     if request.method == "POST":
         try:
             with transaction.atomic():
+                cart_data = calculate_cart(request)
+
                 order = Order.objects.create(
                     user=request.user,
                     first_name=request.user.first_name,
@@ -189,10 +312,15 @@ def checkout(request):
                     street=profile.street,
                     postal_code=profile.postal_code,
                     city=profile.city,
+                    coupon_code=cart_data["coupon"].code if cart_data["coupon"] else "",
+                    total_before_discount=cart_data["subtotal"],
+                    discount_amount=cart_data["discount_amount"],
+                    total_after_discount=cart_data["total"],
                 )
 
-                for variant_id, quantity in cart.items():
-                    variant = ProductVariant.objects.select_for_update().get(pk=variant_id)
+                for item in cart_data["cart_items"]:
+                    variant = ProductVariant.objects.select_for_update().get(pk=item["variant"].id)
+                    quantity = item["quantity"]
 
                     if quantity > variant.stock:
                         add_app_message(
@@ -206,13 +334,14 @@ def checkout(request):
                         order=order,
                         variant=variant,
                         quantity=quantity,
-                        price_at_order=variant.price,
+                        price_at_order=item["price"],
                     )
 
                     variant.stock -= quantity
                     variant.save()
 
                 request.session["cart"] = {}
+                request.session.pop("coupon_code", None)
 
             add_app_message(request, "KS_02", f"Numer: {order.order_number}.")
             return redirect("orders")
@@ -250,117 +379,15 @@ def order_detail(request, order_id):
         user=request.user
     )
 
-    total = 0
-
-    for item in order.items.all():
-        total += item.quantity * item.price_at_order
-
     return render(
         request,
         "shop/order_detail.html",
         {
             "order": order,
-            "total": total,
+            "total": order.total_after_discount,
         }
     )
 
-
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect("profile")
-
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            add_app_message(request, "KS_04")
-            return redirect("profile")
-    else:
-        form = RegisterForm()
-
-    return render(request, "shop/register.html", {"form": form})
-
-
-@login_required
-
-@login_required
-def profile_view(request):
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user
-    )
-
-    orders = Order.objects.filter(user=request.user)
-
-    orders_count = orders.count()
-
-    total_spent = OrderItem.objects.filter(
-        order__user=request.user
-    ).aggregate(
-        total=Sum(
-            ExpressionWrapper(
-                F("quantity") * F("price_at_order"),
-                output_field=DecimalField()
-            )
-        )
-    )["total"] or 0
-
-    last_order = orders.order_by("-created_at").first()
-
-    return render(
-        request,
-        "shop/profile.html",
-        {
-            "profile": profile,
-            "orders_count": orders_count,
-            "total_spent": total_spent,
-            "last_order": last_order,
-        }
-    )
-
-@login_required
-
-@login_required
-def edit_profile(request):
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user
-    )
-
-    if request.method == "POST":
-        user_form = UserForm(
-            request.POST,
-            instance=request.user
-        )
-
-        profile_form = UserProfileForm(
-            request.POST,
-            instance=profile
-        )
-
-        if user_form.is_valid() and profile_form.is_valid():
-            user_form.save()
-            profile_form.save()
-
-            add_app_message(request, "KS_03")
-            return redirect("profile")
-    else:
-        user_form = UserForm(instance=request.user)
-        profile_form = UserProfileForm(instance=profile)
-
-    return render(
-        request,
-        "shop/edit_profile.html",
-        {
-            "user_form": user_form,
-            "profile_form": profile_form,
-        }
-    )
-
-def logout_view(request):
-    logout(request)
-    add_app_message(request, "KS_05")
-    return redirect("product_list")
 
 @login_required
 def pay_order(request, order_id):
@@ -371,6 +398,12 @@ def pay_order(request, order_id):
         return redirect("order_detail", order_id=order.id)
 
     if request.method == "POST":
+        blik_code = request.POST.get("blik_code", "").strip()
+
+        if not blik_code.isdigit() or len(blik_code) != 6:
+            add_app_message(request, "KB_09", "Kod BLIK musi mieć dokładnie 6 cyfr.")
+            return redirect("order_detail", order_id=order.id)
+
         order.status = "PAID"
         order.save()
 
@@ -378,6 +411,7 @@ def pay_order(request, order_id):
         return redirect("order_detail", order_id=order.id)
 
     return redirect("order_detail", order_id=order.id)
+
 
 @login_required
 def ship_order(request, order_id):
@@ -407,6 +441,7 @@ def ship_order(request, order_id):
 
     return redirect("order_detail", order_id=order.id)
 
+
 @login_required
 def deliver_order(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
@@ -427,3 +462,85 @@ def deliver_order(request, order_id):
         return redirect("order_detail", order_id=order.id)
 
     return redirect("order_detail", order_id=order.id)
+
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("profile")
+
+    if request.method == "POST":
+        form = RegisterForm(request.POST)
+
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            add_app_message(request, "KS_04")
+            return redirect("profile")
+    else:
+        form = RegisterForm()
+
+    return render(request, "shop/register.html", {"form": form})
+
+
+@login_required
+def profile_view(request):
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    orders = Order.objects.filter(user=request.user)
+    orders_count = orders.count()
+
+    total_spent = OrderItem.objects.filter(order__user=request.user).aggregate(
+        total=Sum(
+            ExpressionWrapper(
+                F("quantity") * F("price_at_order"),
+                output_field=DecimalField()
+            )
+        )
+    )["total"] or 0
+
+    last_order = orders.order_by("-created_at").first()
+
+    return render(
+        request,
+        "shop/profile.html",
+        {
+            "profile": profile,
+            "orders_count": orders_count,
+            "total_spent": total_spent,
+            "last_order": last_order,
+        }
+    )
+
+
+@login_required
+def edit_profile(request):
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        user_form = UserForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, instance=profile)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+
+            add_app_message(request, "KS_03")
+            return redirect("profile")
+    else:
+        user_form = UserForm(instance=request.user)
+        profile_form = UserProfileForm(instance=profile)
+
+    return render(
+        request,
+        "shop/edit_profile.html",
+        {
+            "user_form": user_form,
+            "profile_form": profile_form,
+        }
+    )
+
+
+def logout_view(request):
+    logout(request)
+    add_app_message(request, "KS_05")
+    return redirect("product_list")

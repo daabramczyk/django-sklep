@@ -1,5 +1,9 @@
-from django.db import models
+from decimal import Decimal
+
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
+from django.db.models import Avg
 
 
 class Brand(models.Model):
@@ -33,6 +37,16 @@ class Product(models.Model):
     gender = models.CharField(max_length=16, choices=GENDER_CHOICES, default="UNISEX")
     material = models.CharField(max_length=128, blank=True)
     image = models.ImageField(upload_to="products/", blank=True, null=True)
+    is_featured = models.BooleanField(default=False)
+
+    @property
+    def average_rating(self):
+        value = self.reviews.aggregate(avg=Avg("rating"))["avg"]
+        return round(value, 2) if value else None
+
+    @property
+    def reviews_count(self):
+        return self.reviews.count()
 
     def __str__(self):
         return f"{self.brand.name} {self.name}"
@@ -53,10 +67,34 @@ class ProductVariant(models.Model):
     color = models.CharField(max_length=32)
     sku = models.CharField(max_length=64, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    sale_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     stock = models.PositiveIntegerField(default=0)
+
+    def get_price(self):
+        if self.sale_price is not None:
+            return self.sale_price
+        return self.price
+
+    @property
+    def is_on_sale(self):
+        return self.sale_price is not None and self.sale_price < self.price
 
     def __str__(self):
         return f"{self.product} | {self.color} | {self.size}"
+
+
+class Coupon(models.Model):
+    code = models.CharField(max_length=32, unique=True)
+    discount_percent = models.PositiveIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(90),
+        ]
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.code} - {self.discount_percent}%"
 
 
 class Order(models.Model):
@@ -67,38 +105,25 @@ class Order(models.Model):
         ("DELIVERED", "Dostarczone"),
     ]
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    order_number = models.CharField(
-        max_length=32,
-        unique=True,
-        blank=True,
-        null=True
-    )
-
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default="NEW"
-    )
-
+    order_number = models.CharField(max_length=32, unique=True, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="NEW")
     created_at = models.DateTimeField(auto_now_add=True)
 
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=30, blank=True)
-
     street = models.CharField(max_length=255, blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
     city = models.CharField(max_length=100, blank=True)
 
-    tracking_number = models.CharField(
-        max_length=100,
-        blank=True
-    )
+    tracking_number = models.CharField(max_length=100, blank=True)
+
+    coupon_code = models.CharField(max_length=32, blank=True)
+    total_before_discount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    total_after_discount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
 
     def save(self, *args, **kwargs):
         old_status = None
@@ -114,10 +139,7 @@ class Order(models.Model):
             super().save(update_fields=["order_number"])
 
         if old_status != self.status:
-            OrderStatusHistory.objects.create(
-                order=self,
-                status=self.status
-            )
+            OrderStatusHistory.objects.create(order=self, status=self.status)
 
     def __str__(self):
         return self.order_number or f"Zamówienie #{self.id}"
@@ -133,17 +155,32 @@ class OrderItem(models.Model):
         return f"{self.variant} x {self.quantity}"
 
 
-class UserProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name="reviews", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rating = models.PositiveIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
     )
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("product", "user")
+
+    def __str__(self):
+        return f"{self.product} - {self.rating}/5 - {self.user}"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
 
     phone = models.CharField(max_length=30, blank=True)
-
     street = models.CharField(max_length=255, blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
     city = models.CharField(max_length=100, blank=True)
