@@ -1,0 +1,69 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<h1>Produkty</h1>
+
+{% if products %}
+    <div class="products-grid">
+        {% for product in products %}
+            <div class="card">
+
+                {% if product.image %}
+                    <img
+                        src="{{ product.image.url }}"
+                        alt="{{ product.name }}"
+                        style="width: 100%; height: 220px; object-fit: cover; border-radius: 12px;"
+                    >
+                {% endif %}
+
+                <h2>{{ product.brand.name }} {{ product.name }}</h2>
+
+                <p>{{ product.category.name }}</p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <label>Wariant:</label><br>
+                    <select name="variant_id">
+                        {% for variant in product.variants.all %}
+                            {% if variant.stock > 0 %}
+                                <option value="{{ variant.id }}">
+                                    {{ variant.color }} | {{ variant.size }} | {{ variant.price }} zł | stan: {{ variant.stock }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+
+                    <br><br>
+
+                    <label>Ilość:</label><br>
+                    <input
+                        type="number"
+                        name="quantity"
+                        value="1"
+                        min="1"
+                        style="width: 60px;"
+                    >
+
+                    <br><br>
+
+                    <button class="btn" type="submit">
+                        Dodaj do koszyka
+                    </button>
+                </form>
+
+                <br>
+
+                <a class="btn btn-secondary" href="/products/{{ product.id }}/">
+                    Szczegóły produktu
+                </a>
+
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>Brak produktów.</p>
+{% endif %}
+
+{% endblock %}

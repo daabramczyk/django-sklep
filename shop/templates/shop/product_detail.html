@@ -1,0 +1,91 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<div class="form-box">
+
+<h1>{{ product.brand.name }} {{ product.name }}</h1>
+
+{% if product.image %}
+    <img
+        src="{{ product.image.url }}"
+        alt="{{ product.name }}"
+        style="width: 100%; max-width: 500px; height: auto; border-radius: 12px;"
+    >
+{% endif %}
+
+<p><strong>Kategoria:</strong> {{ product.category.name }}</p>
+<p><strong>Płeć:</strong> {{ product.gender }}</p>
+<p><strong>Materiał:</strong> {{ product.material }}</p>
+
+<p>
+    <strong>Opis:</strong><br>
+    {{ product.description }}
+</p>
+
+<hr>
+
+<h2>Dostępne warianty</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <label for="variant_id">Wariant:</label><br>
+    <select name="variant_id" id="variant_id">
+        {% for variant in product.variants.all %}
+            <option value="{{ variant.id }}">
+                {{ variant.color }} | {{ variant.size }} | {{ variant.price }} zł | stan: {{ variant.stock }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+
+    <label for="quantity">Ilość:</label><br>
+
+    <button type="button" class="btn btn-secondary" onclick="changeQuantity(-1)">-</button>
+
+    <input
+        type="number"
+        name="quantity"
+        id="quantity"
+        value="1"
+        min="1"
+        style="width: 60px;"
+    >
+
+    <button type="button" class="btn btn-secondary" onclick="changeQuantity(1)">+</button>
+
+    <br><br>
+
+    <button class="btn" type="submit">Dodaj do koszyka</button>
+</form>
+
+<br>
+
+<a href="/cart/">Przejdź do koszyka</a>
+<br><br>
+<a href="/products/">← Powrót do produktów</a>
+
+</div>
+
+<script>
+function changeQuantity(change) {
+    const input = document.getElementById("quantity");
+    let value = parseInt(input.value);
+
+    if (isNaN(value)) {
+        value = 1;
+    }
+
+    value = value + change;
+
+    if (value < 1) {
+        value = 1;
+    }
+
+    input.value = value;
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Clothing Store</title>
+    <link rel="stylesheet" href="{% static 'shop/css/style.css' %}">
+</head>
+<body>
+
+<div class="navbar">
+    <div>
+        <strong>Clothing Store</strong>
+    </div>
+
+    <div>
+        <a href="/products/">Produkty</a>
+        <a href="/cart/">Koszyk</a>
+        <a href="/admin/">Admin</a>
+    </div>
+</div>
+
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+</body>
+</html>

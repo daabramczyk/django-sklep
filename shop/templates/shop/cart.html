@@ -1,0 +1,82 @@
+{% extends "shop/base.html" %}
+
+{% block content %}
+
+<h1>Koszyk</h1>
+
+{% if cart_items %}
+
+    {% for item in cart_items %}
+        <div class="cart-item">
+            <h2>
+                {{ item.variant.product.brand.name }}
+                {{ item.variant.product.name }}
+            </h2>
+
+            <p>
+                Kolor: {{ item.variant.color }}
+                |
+                Rozmiar: {{ item.variant.size }}
+            </p>
+
+            <p>Cena: {{ item.variant.price }} zł</p>
+            <p>Ilość w koszyku: {{ item.quantity }}</p>
+            <p><strong>Razem: {{ item.item_total }} zł</strong></p>
+
+            <form method="post" action="{% url 'remove_from_cart' item.variant.id %}">
+                {% csrf_token %}
+
+                <label>Ile sztuk usunąć?</label><br>
+
+                <button type="button" class="btn btn-secondary" onclick="changeRemoveQuantity('{{ item.variant.id }}', -1)">-</button>
+
+                <input
+                    type="number"
+                    name="remove_quantity"
+                    id="remove_quantity_{{ item.variant.id }}"
+                    value="1"
+                    min="1"
+                    max="{{ item.quantity }}"
+                    style="width: 60px;"
+                >
+
+                <button type="button" class="btn btn-secondary" onclick="changeRemoveQuantity('{{ item.variant.id }}', 1)">+</button>
+
+                <button class="btn" type="submit">Usuń</button>
+            </form>
+        </div>
+    {% endfor %}
+
+    <h2>Suma: {{ total }} zł</h2>
+
+{% else %}
+    <p>Koszyk jest pusty.</p>
+{% endif %}
+
+<a href="/products/">← Powrót do produktów</a>
+
+<script>
+function changeRemoveQuantity(variantId, change) {
+    const input = document.getElementById("remove_quantity_" + variantId);
+    let value = parseInt(input.value);
+    const max = parseInt(input.max);
+
+    if (isNaN(value)) {
+        value = 1;
+    }
+
+    value = value + change;
+
+    if (value < 1) {
+        value = 1;
+    }
+
+    if (value > max) {
+        value = max;
+    }
+
+    input.value = value;
+}
+</script>
+
+{% endblock %}
