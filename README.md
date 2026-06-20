@@ -1,198 +1,368 @@
-# Clothing Store
+# Clothing Store – platforma sprzedaży internetowej
 
-Kompletny system sklepu internetowego zbudowany w technologii Django, PostgreSQL i Docker.
+## Cel projektu
 
-Projekt został przygotowany jako przykład pełnego rozwiązania biznesowo-systemowego obejmującego analizę biznesową, model danych, architekturę systemu, implementację backendu, REST API, uwierzytelnianie JWT, testy automatyczne oraz dokumentację projektową.
+Projekt przedstawia kompletny system sklepu internetowego zbudowany w technologii Django, PostgreSQL oraz Docker.
 
-Logowanie:
-Konto administratora:
-login: admin 
-hasło: admin12345
+Celem projektu było zaprojektowanie i implementacja rozwiązania obejmującego pełny proces sprzedaży internetowej – od przeglądania katalogu produktów, przez składanie i opłacanie zamówień, aż po ich realizację i dostarczenie.
 
-Kontro testowe:
-login: testowyk
-hasło: Test123456
+Projekt został wykonany jako przykład połączenia:
+
+* analizy biznesowej,
+* analizy systemowej,
+* modelowania danych,
+* projektowania architektury,
+* implementacji backendu,
+* projektowania REST API,
+* przygotowania dokumentacji technicznej i analitycznej,
+* automatyzacji testów.
+
+System został zaprojektowany w sposób umożliwiający jego dalszy rozwój oraz integrację z usługami zewnętrznymi.
 
 ---
 
-# Business Overview
+# Dane dostępowe
 
-Celem systemu jest obsługa sprzedaży produktów odzieżowych online.
+## Konto administratora
+
+Login:
+
+```text
+admin
+```
+
+Hasło:
+
+```text
+admin12345
+```
+
+## Konto testowe klienta
+
+Login:
+
+```text
+testowyk
+```
+
+Hasło:
+
+```text
+Test123456
+```
+
+---
+
+# Uzasadnienie biznesowe projektu
+
+Większość współczesnych sklepów internetowych realizuje podobny proces biznesowy:
+
+1. Prezentacja oferty.
+2. Wybór produktu.
+3. Dodanie do koszyka.
+4. Złożenie zamówienia.
+5. Płatność.
+6. Realizacja zamówienia.
+7. Dostarczenie produktu.
+
+Projekt został przygotowany tak, aby odwzorować ten proces możliwie wiernie przy zachowaniu rozsądnego poziomu złożoności.
+
+Dzięki temu możliwe było przećwiczenie pełnego cyklu projektowania systemu informatycznego.
+
+---
+
+# Zakres funkcjonalny
+
+## Zarządzanie katalogiem produktów
 
 System umożliwia:
 
-* zarządzanie katalogiem produktów,
-* obsługę klientów,
-* realizację zamówień,
-* stosowanie kuponów rabatowych,
-* ocenianie produktów,
-* monitorowanie procesu realizacji zamówień,
-* udostępnianie danych przez REST API.
+* definiowanie marek,
+* definiowanie kategorii,
+* tworzenie produktów,
+* tworzenie wariantów produktów,
+* obsługę rozmiarów,
+* obsługę kolorów,
+* obsługę promocji,
+* oznaczanie produktów wyróżnionych.
 
-Projekt został przygotowany w sposób zbliżony do rzeczywistych systemów e-commerce.
+### Dlaczego zastosowano warianty produktów?
+
+W praktycznych systemach e-commerce produkt oraz jego wariant są odrębnymi bytami biznesowymi.
+
+Przykład:
+
+Produkt:
+
+```text
+Nike Air Max
+```
+
+Warianty:
+
+```text
+42 / Czarny
+43 / Czarny
+42 / Biały
+43 / Biały
+```
+
+Pozwala to zarządzać stanami magazynowymi na poziomie konkretnego wariantu.
 
 ---
 
-# Functional Scope
+## Koszyk zakupowy
 
-## Katalog produktów
+Koszyk przechowywany jest w sesji użytkownika.
 
-* marki produktów,
-* kategorie produktów,
-* warianty produktów,
-* rozmiary,
-* kolory,
-* promocje,
-* produkty wyróżnione.
+### Dlaczego zastosowano sesję?
 
-## Koszyk
+Na etapie projektu nie było wymagania utrzymywania trwałego koszyka między urządzeniami.
 
-* dodawanie produktów,
-* usuwanie produktów,
-* walidacja stanów magazynowych,
-* przechowywanie koszyka w sesji.
+Zastosowanie sesji:
+
+* upraszcza implementację,
+* ogranicza liczbę tabel w bazie danych,
+* pozwala szybko realizować proces zakupowy.
+
+---
 
 ## Zamówienia
 
-* checkout,
-* historia zamówień,
-* szczegóły zamówień,
-* numer zamówienia:
+System umożliwia:
+
+* tworzenie zamówień,
+* przegląd historii zamówień,
+* śledzenie statusów,
+* przechowywanie danych dostawy.
+
+Przykładowy numer zamówienia:
 
 ```text
 ORD-2026-000001
 ```
 
-* historia statusów.
+### Dlaczego dane adresowe są kopiowane do zamówienia?
+
+Adres użytkownika może zmieniać się w czasie.
+
+Zamówienie przechowuje tzw. snapshot danych dostawy, dzięki czemu możliwe jest odtworzenie historycznego stanu zamówienia.
+
+---
 
 ## Płatności
 
-Aktualna implementacja:
+Aktualnie zaimplementowano moduł:
 
 ```text
 Fake BLIK
 ```
 
-Obsługiwane statusy:
+### Dlaczego zastosowano Fake BLIK?
 
-```text
-NEW
-PAID
-SHIPPED
-DELIVERED
-```
+Celem projektu nie było integrowanie się z rzeczywistym operatorem płatności.
 
-## Kupony rabatowe
-
-* rabaty procentowe,
-* aktywacja/dezaktywacja kuponów,
-* automatyczne przeliczanie koszyka.
-
-## Opinie
-
-* oceny 1–5,
-* komentarze,
-* średnia ocena produktu.
-
-## Dashboard
-
-* liczba zamówień,
-* liczba klientów,
-* liczba produktów,
-* przychód,
-* top produkty,
-* top marki,
-* AuditLog.
-
-## REST API
-
-* produkty,
-* marki,
-* kategorie,
-* zamówienia.
-
-## Swagger / OpenAPI
-
-* Swagger UI,
-* Redoc,
-* OpenAPI Schema.
-
----
-
-# User Roles
-
-## CUSTOMER
-
-Klient sklepu.
-
-Uprawnienia:
-
-* przeglądanie produktów,
-* składanie zamówień,
-* płatność,
-* opinie,
-* historia zamówień.
-
-## WAREHOUSE
-
-Pracownik magazynu.
-
-Uprawnienia:
-
-* wysyłka zamówień,
-* nadawanie numerów przesyłek,
-* oznaczanie dostarczenia.
-
-## MANAGER
-
-Kierownik sklepu.
-
-Uprawnienia:
-
-* dashboard,
-* raportowanie,
-* analiza sprzedaży.
-
-## ADMIN
-
-Administrator systemu.
-
-Uprawnienia:
-
-* pełna administracja systemem.
-
----
-
-# Business Processes
-
-## Rejestracja użytkownika
-
-1. Rejestracja.
-2. Utworzenie profilu.
-3. Automatyczne logowanie.
-
-## Zakup produktu
-
-1. Wybór produktu.
-2. Dodanie do koszyka.
-3. Checkout.
-4. Utworzenie zamówienia.
-
-## Płatność
+Moduł umożliwia jednak pełne przetestowanie procesu:
 
 ```text
 NEW → PAID
 ```
 
-## Realizacja zamówienia
+oraz przygotowuje system do przyszłej integracji z PayU, Przelewy24 lub Stripe.
+
+---
+
+## Kupony rabatowe
+
+System umożliwia:
+
+* definiowanie kodów rabatowych,
+* określanie wysokości rabatu,
+* aktywowanie i dezaktywowanie kuponów.
+
+Mechanizm odwzorowuje najczęściej spotykane rozwiązania stosowane w sklepach internetowych.
+
+---
+
+## Opinie o produktach
+
+System umożliwia:
+
+* ocenę produktu w skali 1–5,
+* dodawanie komentarzy,
+* wyliczanie średniej oceny.
+
+Funkcjonalność wspiera proces podejmowania decyzji zakupowych przez klientów.
+
+---
+
+## Dashboard zarządczy
+
+Dashboard prezentuje:
+
+* liczbę zamówień,
+* liczbę klientów,
+* liczbę produktów,
+* przychód,
+* najpopularniejsze produkty,
+* najpopularniejsze marki,
+* historię działań systemowych.
+
+### Dlaczego dashboard?
+
+Dashboard umożliwia szybkie monitorowanie działania sklepu bez konieczności wykonywania zapytań bezpośrednio do bazy danych.
+
+---
+
+# Role użytkowników
+
+| Rola          | Zakres odpowiedzialności |
+| ------------- | ------------------------ |
+| Gość          | przeglądanie katalogu    |
+| Klient        | składanie zamówień       |
+| Magazynier    | realizacja wysyłek       |
+| Manager       | analiza sprzedaży        |
+| Administrator | administracja systemem   |
+
+### Dlaczego zastosowano role?
+
+Rozdzielenie uprawnień zwiększa bezpieczeństwo oraz pozwala odwzorować rzeczywiste obowiązki użytkowników.
+
+---
+
+# Proces realizacji zamówienia
+
+Statusy zamówienia:
 
 ```text
-PAID → SHIPPED → DELIVERED
+NEW
+↓
+PAID
+↓
+SHIPPED
+↓
+DELIVERED
+```
+
+Opis:
+
+* NEW – zamówienie utworzone,
+* PAID – zamówienie opłacone,
+* SHIPPED – zamówienie wysłane,
+* DELIVERED – zamówienie dostarczone.
+
+---
+
+# Architektura rozwiązania
+
+System wykorzystuje architekturę warstwową.
+
+```text
+Warstwa prezentacji
+        ↓
+Warstwa aplikacyjna
+        ↓
+Warstwa domenowa
+        ↓
+Warstwa persystencji
+        ↓
+PostgreSQL
+```
+
+### Dlaczego architektura warstwowa?
+
+Pozwala:
+
+* oddzielić logikę biznesową od prezentacji,
+* ograniczyć zależności,
+* uprościć rozwój systemu,
+* zwiększyć testowalność rozwiązania.
+
+---
+
+# Wykorzystane technologie i uzasadnienie wyboru
+
+## Django
+
+Wybrano ze względu na:
+
+* dojrzałość frameworka,
+* wbudowany ORM,
+* gotowy system autoryzacji,
+* panel administracyjny,
+* możliwość szybkiego tworzenia aplikacji biznesowych.
+
+## PostgreSQL
+
+Wybrano ze względu na:
+
+* zgodność ACID,
+* wysoką stabilność,
+* obsługę relacyjnych modeli danych,
+* popularność w systemach produkcyjnych.
+
+## Django REST Framework
+
+Wybrano w celu budowy REST API umożliwiającego integrację z aplikacjami zewnętrznymi.
+
+## JWT
+
+Wdrożono w celu przygotowania systemu do komunikacji z klientami mobilnymi i integracjami zewnętrznymi.
+
+## Docker
+
+Wdrożono w celu:
+
+* standaryzacji środowiska,
+* uproszczenia wdrożeń,
+* eliminacji problemów konfiguracyjnych.
+
+---
+
+# REST API
+
+Publiczne endpointy:
+
+```http
+GET /api/products/
+GET /api/products/{id}
+GET /api/brands/
+GET /api/categories/
+```
+
+Chronione endpointy:
+
+```http
+GET /api/orders/
+```
+
+Dostęp realizowany jest przy użyciu JWT.
+
+---
+
+# Dokumentacja API
+
+Swagger:
+
+```text
+/api/swagger/
+```
+
+Redoc:
+
+```text
+/api/redoc/
+```
+
+Schema:
+
+```text
+/api/schema/
 ```
 
 ---
 
-# Data Model
+# Model danych
 
 Główne encje:
 
@@ -209,7 +379,7 @@ Główne encje:
 * OrderStatusHistory
 * AuditLog
 
-Pełny model danych znajduje się w:
+Szczegółowy model danych:
 
 ```text
 docs/analysis/02_erd.md
@@ -217,275 +387,73 @@ docs/analysis/02_erd.md
 
 ---
 
-# Architecture
+# Testy
 
-Architektura warstwowa:
+Projekt zawiera:
 
-```text
-Presentation Layer
-↓
-Application Layer
-↓
-Domain Layer
-↓
-Persistence Layer
-↓
-PostgreSQL
-```
+* testy automatyczne,
+* testy manualne,
+* dane demonstracyjne.
 
-Dokumentacja architektury:
+Raport testów:
 
 ```text
-docs/analysis/05_component_diagram.md
+docs/analysis/06_test_report.md
 ```
 
 ---
 
-# Technology Stack
+# Dane demonstracyjne
 
-## Backend
+W projekcie przygotowano automatyczne zasilenie bazy danych:
 
-* Python 3.12+
-* Django
-* Django REST Framework
-* SimpleJWT
-
-## Database
-
-* PostgreSQL
-
-## API Documentation
-
-* Swagger
-* Redoc
-* drf-spectacular
-
-## Tests
-
-* Django Test Framework
-* APITestCase
-
-## Containerization
-
-* Docker
-* Docker Compose
+* 50 produktów,
+* 147 wariantów,
+* 20 użytkowników,
+* 40 zamówień,
+* 201 opinii,
+* 4 kupony,
+* 100 wpisów AuditLog.
 
 ---
 
-# JWT Authentication
+# Dokumentacja analityczna
 
-Pobranie tokena:
-
-```http
-POST /api/token/
-```
-
-Odświeżenie tokena:
-
-```http
-POST /api/token/refresh/
-```
-
-Przykład:
-
-```json
-{
-  "username": "user",
-  "password": "password"
-}
-```
-
-Odpowiedź:
-
-```json
-{
-  "refresh": "...",
-  "access": "..."
-}
-```
+* 01_use_cases.md
+* 02_erd.md
+* 03_bpmn.md
+* 04_class_diagram.md
+* 05_component_diagram.md
+* 06_test_report.md
 
 ---
 
-# REST API
+# Możliwe kierunki rozwoju
 
-## Public
-
-```http
-GET /api/products/
-GET /api/products/{id}/
-
-GET /api/brands/
-GET /api/categories/
-```
-
-## Protected
-
-```http
-GET /api/orders/
-```
-
-JWT wymagany.
+* integracja z PayU,
+* integracja z Przelewy24,
+* integracja z InPost API,
+* integracja z TERYT,
+* powiadomienia e-mail,
+* raporty XLSX,
+* GitHub Actions,
+* CI/CD,
+* Kubernetes.
 
 ---
 
-# Swagger
-
-Dokumentacja API:
-
-```text
-/api/swagger/
-/api/redoc/
-/api/schema/
-```
-
----
-
-# Automated Tests
-
-Zakres testów:
-
-* modele,
-* autoryzacja,
-* JWT,
-* zamówienia,
-* kupony,
-* opinie,
-* dashboard,
-* checkout,
-* REST API.
-
-Uruchomienie:
-
-```bash
-docker compose exec web python manage.py test
-```
-
----
-
-# Docker
-
-Budowa:
-
-```bash
-docker compose build
-```
-
-Uruchomienie:
-
-```bash
-docker compose up -d
-```
-
-Zatrzymanie:
-
-```bash
-docker compose down
-```
-
----
-
-# Local Installation
-
-## 1. Klonowanie repozytorium
-
-```bash
-git clone <repository_url>
-cd django-sklep
-```
-
-## 2. Docker
-
-```bash
-docker compose up -d --build
-```
-
-## 3. Migracje
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-## 4. Superuser
-
-```bash
-docker compose exec web python manage.py createsuperuser
-```
-
-## 5. Uruchomienie
-
-```text
-http://localhost:8000
-```
-
----
-
-# Documentation
-
-## Use Cases
-
-```text
-docs/analysis/01_use_cases.md
-```
-
-## ERD
-
-```text
-docs/analysis/02_erd.md
-```
-
-## BPMN
-
-```text
-docs/analysis/03_bpmn.md
-```
-
-## UML Class Diagram
-
-```text
-docs/analysis/04_class_diagram.md
-```
-
-## Component Diagram
-
-```text
-docs/analysis/05_component_diagram.md
-```
-
----
-
-# Roadmap
-
-Planowane rozszerzenia:
-
-* Przelewy24
-* Stripe
-* Email Notifications
-* GitHub Actions
-* CI/CD
-* Eksport XLSX
-* Raporty sprzedaży
-* Wykresy sprzedaży
-* Nginx + Gunicorn
-* Kubernetes
-
----
-
-# Author
+# Autor
 
 Damian Abramczyk
 
-Business & System Analyst
+Analityk biznesowo-systemowy
 
-Technologie:
+Projekt został przygotowany jako demonstracja umiejętności z zakresu:
 
-* Django
-* PostgreSQL
-* Docker
-* REST API
-* JWT
-* UML
-* BPMN
-* BABOK
-* Analiza biznesowa
-* Analiza systemowa
-
+* analizy biznesowej,
+* analizy systemowej,
+* modelowania UML,
+* modelowania BPMN,
+* projektowania baz danych,
+* projektowania REST API,
+* implementacji aplikacji Django.
